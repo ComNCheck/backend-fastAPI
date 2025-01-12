@@ -67,7 +67,6 @@ def perform_ocr(image: np.ndarray) -> dict:
         logging.info("perform_ocr 함수 실행")
         client = vision.ImageAnnotatorClient()
 
-        # 이미지 전처리: 그레이스케일 변환, 노이즈 제거, 적응형 이진화
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred_image = cv2.medianBlur(gray_image, 3)
         binary_image = cv2.adaptiveThreshold(
@@ -78,15 +77,12 @@ def perform_ocr(image: np.ndarray) -> dict:
             11,
             2
         )
-
-        # 필요 시 이미지 크기 조정 (적절한 크기 유지)
         height, width = binary_image.shape
         if height < 800 or width < 800:
             resized_image = cv2.resize(binary_image, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
         else:
             resized_image = binary_image
 
-        # 이미지 인코딩 (PNG 사용)
         success, encoded_image = cv2.imencode('.png', resized_image)
         if not success:
             raise HTTPException(status_code=500, detail="이미지 인코딩 실패")
@@ -94,8 +90,7 @@ def perform_ocr(image: np.ndarray) -> dict:
         content = encoded_image.tobytes()
         vision_image = vision.Image(content=content)
 
-        # Google Vision API 호출 (DOCUMENT_TEXT_DETECTION 사용)
-        image_context = vision.ImageContext(language_hints=["ko", "en"])  # 한글 + 영어
+        image_context = vision.ImageContext(language_hints=["ko", "en"]) 
         response = client.document_text_detection(image=vision_image, image_context=image_context)
         if response.error.message:
             logging.error(f"Vision API 오류: {response.error.message}")
@@ -108,11 +103,9 @@ def perform_ocr(image: np.ndarray) -> dict:
         if not texts:
             return {"error": "텍스트를 인식할 수 없습니다."}
 
-        # OCR 결과 텍스트 가져오기
         ocr_text = texts[0].description
         logging.info(f"OCR 추출 텍스트: {ocr_text}")
 
-        # 필요한 필드 추출
         fields = extract_fields(ocr_text)
         logging.info(f"추출된 필드: {fields}")
 
@@ -126,53 +119,36 @@ def perform_ocr(image: np.ndarray) -> dict:
         raise HTTPException(status_code=500, detail="OCR 처리 중 오류가 발생했습니다.")
 
 def extract_fields(ocr_text: str) -> dict:
-    """
-    OCR로부터 추출된 텍스트에서 이름, 학번, 학과를 추출합니다.
-    
-    Args:
-        ocr_text (str): OCR로부터 추출된 전체 텍스트.
-    
-    Returns:
-        dict: 추출된 이름, 학번, 학과를 포함하는 딕셔너리.
-    """
+
     name = None
     student_id = None
     major = None
-
-    # 텍스트를 줄 단위로 분리
     lines = ocr_text.splitlines()
 
-    # 정규 표현식 패턴 정의
-    student_id_pattern = re.compile(r'\b\d{9}\b')  # 정확히 9자리 숫자
-    major_pattern = re.compile(r'.*전공.*')  # '전공' 포함
+    student_id_pattern = re.compile(r'\b\d{9}\b')  
+    major_pattern = re.compile(r'.*전공.*')  
 
-    # 이전 줄을 추적하기 위한 변수
     previous_line = None
 
     for line in lines:
         line = line.strip()
         if not line:
-            continue  # 빈 줄은 무시
+            continue 
 
-        # 학번 추출
         if not student_id:
             match = student_id_pattern.search(line)
             if match:
                 student_id = match.group()
-                # 이름은 학번이 나온 줄의 이전 줄
                 if previous_line:
                     name = previous_line
                 continue
 
-        # 학과 추출
         if not major and major_pattern.match(line):
             major = line
             continue
 
-        # 이전 줄 업데이트
         previous_line = line
 
-        # 모든 필드를 추출했으면 루프 종료
         if name and student_id and major:
             break
 
@@ -204,7 +180,6 @@ async def compare_and_ocr(file: UploadFile = File(...)):
                 },
                 status_code=400
             )
-        #extracted_text = "ocr"
         extracted_text = perform_ocr(uploaded_image)
 
         return JSONResponse(
