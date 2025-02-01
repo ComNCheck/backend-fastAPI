@@ -9,12 +9,15 @@ import math
 import logging
 from google.cloud import vision
 import re
+import requests  
+from bs4 import BeautifulSoup
 app = FastAPI()
 
 SAVED_IMAG_PATH = Path("Comparative-image.png")
 
-SIMILARITY_THRESHOLD= 99.0
+SIMILARITY_THRESHOLD= 93.0
 logging.basicConfig(level=logging.INFO)
+BASE_URL = "https://computer.hufs.ac.kr"
 
 def calculate_histogram_similarity(img1: np.ndarray, img2: np.ndarray) -> float:
     hist1 = cv2.calcHist([img1], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
@@ -158,8 +161,9 @@ def extract_fields(ocr_text: str) -> dict:
         'major': major
     }
 
-@app.post("/compare-and-ocr/")
+@app.post("/api/vi/compare-and-ocr")
 async def compare_and_ocr(file: UploadFile = File(...)):
+    print("이미지 넘어옴")
     try:
         saved_image = cv2.imread(str(SAVED_IMAG_PATH))
         if saved_image is None:
@@ -197,3 +201,66 @@ async def compare_and_ocr(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/vi/scrape/notice")
+def scrape_hufs_notices():
+    url = "https://computer.hufs.ac.kr/computer/10058/subview.do"
+    response = requests.get(url)
+    response.raise_for_status()  
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    notice_table = soup.select_one("tbody") 
+    rows = notice_table.select("tr") 
+
+    notices = []
+    for row in rows:
+        num_tag = row.select_one(".td-num")
+        subject_tag = row.select_one(".td-subject a")
+        date_tag = row.select_one(".td-date")
+
+        if num_tag and subject_tag and date_tag:
+            notice_id = num_tag.get_text(strip=True)
+            title = subject_tag.get_text(strip=True)
+            date = date_tag.get_text(strip=True)
+            link = BASE_URL + subject_tag["href"]
+
+            notices.append({
+                "notice_id": notice_id,
+                "title": title,
+                "date": date,
+                "link": link
+            })
+
+    return {"notices": notices}
+
+@app.get("/api/vi/scrape/employment")
+def scrape_hufs_notices():
+    url = "https://computer.hufs.ac.kr/computer/10077/subview.do"
+    response = requests.get(url)
+    response.raise_for_status()  
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    notice_table = soup.select_one("tbody") 
+    rows = notice_table.select("tr") 
+
+    notices = []
+    for row in rows:
+        num_tag = row.select_one(".td-num")
+        subject_tag = row.select_one(".td-subject a")
+        date_tag = row.select_one(".td-date")
+
+        if num_tag and subject_tag and date_tag:
+            notice_id = num_tag.get_text(strip=True)
+            title = subject_tag.get_text(strip=True)
+            date = date_tag.get_text(strip=True)
+            link = BASE_URL + subject_tag["href"]
+
+            notices.append({
+                "notice_id": notice_id,
+                "title": title,
+                "date": date,
+                "link": link
+            })
+
+    return {"notices": notices}
