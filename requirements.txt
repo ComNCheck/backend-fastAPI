@@ -46,6 +46,7 @@ pydantic-extra-types==2.10.1
 pydantic-settings==2.7.1
 pydantic_core==2.27.2
 Pygments==2.19.1
+pytesseract==0.3.13
 python-dotenv==1.0.1
 python-multipart==0.0.20
 PyYAML==6.0.2
