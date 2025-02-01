@@ -1,2 +1,11 @@
 # 가상환경
 myvenv/
+
+#파이썬 바이트코드
+__pycache__/
+
+#환경 설정 
+.env
+
+#google-cloud-vision json key
+ancient-pipe-447417-i4-db9826a14abe.json
