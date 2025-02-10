@@ -168,7 +168,7 @@ def extract_fields(ocr_text: str) -> dict:
         'major': major
     }
 
-@app.post("/api/vi/compare-and-ocr")
+@app.post("/api/v1/compare-and-ocr")
 async def compare_and_ocr(file: UploadFile = File(...)):
     print("이미지 넘어옴")
     try:
@@ -208,7 +208,7 @@ async def compare_and_ocr(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/vi/scrape/notice")
+@app.get("/api/v1/scrape/notice")
 def scrape_hufs_notices():
     url = "https://computer.hufs.ac.kr/computer/10058/subview.do"
     response = requests.get(url)
@@ -240,7 +240,7 @@ def scrape_hufs_notices():
 
     return {"notices": notices}
 
-@app.get("/api/vi/scrape/employment")
+@app.get("/api/v1/scrape/employment")
 def scrape_hufs_notices():
     url = "https://computer.hufs.ac.kr/computer/10077/subview.do"
     response = requests.get(url)
