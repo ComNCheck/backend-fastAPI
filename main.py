@@ -11,8 +11,16 @@ from google.cloud import vision
 import re
 import requests  
 from bs4 import BeautifulSoup
+from google.cloud import vision
+from google.oauth2 import service_account
+
 app = FastAPI()
 
+SERVICE_ACCOUNT_FILE = "./ancient-pipe-447417-i4-db9826a14abe.json"
+
+credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+
+client = vision.ImageAnnotatorClient(credentials=credentials)
 SAVED_IMAG_PATH = Path("Comparative-image.png")
 
 SIMILARITY_THRESHOLD= 93.0
@@ -68,7 +76,6 @@ def calculate_similarity(img1: np.ndarray, img2: np.ndarray) -> float:
 def perform_ocr(image: np.ndarray) -> dict:
     try:
         logging.info("perform_ocr 함수 실행")
-        client = vision.ImageAnnotatorClient()
 
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred_image = cv2.medianBlur(gray_image, 3)
@@ -161,7 +168,7 @@ def extract_fields(ocr_text: str) -> dict:
         'major': major
     }
 
-@app.post("/api/vi/compare-and-ocr")
+@app.post("/api/v1/compare-and-ocr")
 async def compare_and_ocr(file: UploadFile = File(...)):
     print("이미지 넘어옴")
     try:
@@ -201,7 +208,7 @@ async def compare_and_ocr(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/vi/scrape/notice")
+@app.get("/api/v1/scrape/notice")
 def scrape_hufs_notices():
     url = "https://computer.hufs.ac.kr/computer/10058/subview.do"
     response = requests.get(url)
@@ -233,7 +240,7 @@ def scrape_hufs_notices():
 
     return {"notices": notices}
 
-@app.get("/api/vi/scrape/employment")
+@app.get("/api/v1/scrape/employment")
 def scrape_hufs_notices():
     url = "https://computer.hufs.ac.kr/computer/10077/subview.do"
     response = requests.get(url)
