@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from google.cloud import vision
 from google.oauth2 import service_account
+import re
 
 app = FastAPI()
 
@@ -210,6 +211,7 @@ async def compare_and_ocr(file: UploadFile = File(...)):
 
 @app.get("/api/v1/scrape/notice")
 def scrape_hufs_notices():
+    logging.info("notice 함수 실행")
     url = "https://computer.hufs.ac.kr/computer/10058/subview.do"
     response = requests.get(url)
     response.raise_for_status()  
@@ -226,10 +228,16 @@ def scrape_hufs_notices():
         date_tag = row.select_one(".td-date")
 
         if num_tag and subject_tag and date_tag:
+
+            span_new = subject_tag.select_one("span.new")
+            if span_new:
+                span_new.decompose()
+
             notice_id = num_tag.get_text(strip=True)
             title = subject_tag.get_text(strip=True)
             date = date_tag.get_text(strip=True)
             link = BASE_URL + subject_tag["href"]
+
 
             notices.append({
                 "notice_id": notice_id,
@@ -258,6 +266,11 @@ def scrape_hufs_notices():
         date_tag = row.select_one(".td-date")
 
         if num_tag and subject_tag and date_tag:
+
+            span_new = subject_tag.select_one("span.new")
+            if span_new:
+                span_new.decompose()
+
             notice_id = num_tag.get_text(strip=True)
             title = subject_tag.get_text(strip=True)
             date = date_tag.get_text(strip=True)
